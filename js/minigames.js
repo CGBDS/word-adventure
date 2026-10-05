@@ -11,7 +11,7 @@ const MG = {
   choose(el, cfg, cb){
     let first=true;
     const card=h('div','prompt-card');
-    card.appendChild(h('div','prompt-sentence', cfg.before+'<span class="blank">&nbsp;</span>'+cfg.after));
+    card.appendChild(h('div','prompt-sentence', cfg.before+'<span class="blank">___</span>'+cfg.after));
     if(cfg.emoji) card.appendChild(h('div','big-emoji',cfg.emoji));
     const grid=h('div','opt-grid');
     const hintBox=h('div');
@@ -195,6 +195,8 @@ const MG = {
 
   /* ---- 6. SPEAK: repite la frase ---- */
   speak(el, cfg, cb){
+    let fails=0, finished=false;
+    const done=(ok,first)=>{ if(!finished){ finished=true; cb(ok,first); } };
     const card=h('div','prompt-card');
     card.appendChild(h('div','prompt-sentence',cfg.phrase));
     const spk=h('button','speak-btn','🔊');
@@ -202,33 +204,52 @@ const MG = {
     card.appendChild(spk);
     const status=h('div','center','<b>Di la frase en voz alta 🗣️</b>');
     card.appendChild(status);
+    const skipBox=h('div','center'); card.appendChild(skipBox);
     el.appendChild(card);
     setTimeout(()=>AudioSys.speak(cfg.phrase),400);
+
+    function showSkip(){
+      if(skipBox.firstChild||finished) return;
+      const sk=h('button','mini-btn','Omitir ➜');
+      sk.style.marginTop='12px'; sk.style.background='linear-gradient(180deg,#b9b0a2,#9a917f)'; sk.style.boxShadow='0 4px 0 #6f675a';
+      sk.onclick=()=>{ AudioSys.sfx('click'); done(true,false); };
+      skipBox.appendChild(sk);
+      skipBox.appendChild(h('div','center','<small>Puedes practicar la voz en otro momento 🎤</small>'));
+    }
 
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
     if(SR){
       const mic=h('button','mic-btn','🎤'); card.appendChild(mic);
       mic.onclick=()=>{
+        if(finished) return;
         mic.classList.add('listening'); status.innerHTML='<b>Escuchando...</b> 👂'; AudioSys.sfx('click');
         listenOnce((transcript)=>{
           mic.classList.remove('listening');
-          if(!transcript){ status.innerHTML='<b>No te escuché, intenta de nuevo</b> 🔁'; return; }
+          if(finished) return;
+          if(!transcript){
+            fails++;
+            status.innerHTML='<b>No te escuché, intenta de nuevo</b> 🔁';
+            if(fails>=1) showSkip();
+            return;
+          }
           const ok=matchPhrase(cfg.phrase, transcript);
           if(ok){
             status.innerHTML='🎉 <b>¡Perfecto!</b>';
             mic.disabled=true; AudioSys.sfx('correct');
-            setTimeout(()=>cb(true,true),700);
+            setTimeout(()=>done(true,true),700);
           }else{
+            fails++;
             status.innerHTML=`<b>Escuché:</b> "${transcript}"<br>Toca 🔊 e intenta de nuevo 💪`;
             AudioSys.sfx('wrong');
+            if(fails>=2) showSkip();
           }
         });
       };
     }else{
-      const done=h('button','btn','✅ ¡Lo dije!');
-      done.onclick=()=>{ AudioSys.sfx('correct'); setTimeout(()=>cb(true,true),400); };
-      card.appendChild(done);
-      card.appendChild(h('div','center','<small>Toca 🎤 imaginario, dilo en voz alta y pulsa el botón</small>'));
+      const doneBtn=h('button','btn','✅ ¡Lo dije!');
+      doneBtn.onclick=()=>{ AudioSys.sfx('correct'); setTimeout(()=>done(true,true),400); };
+      card.appendChild(doneBtn);
+      card.appendChild(h('div','center','<small>Di la frase en voz alta y pulsa el botón</small>'));
     }
   },
 };

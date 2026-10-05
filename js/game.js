@@ -595,7 +595,14 @@ Screen.level=()=>{
       <div class="prog-text" id="lv-txt">1/${LV.n}</div>
     </div>
     <div id="round"></div>`;
-  $('#lv-back').onclick=()=>{ if(confirm('¿Salir del nivel? Perderás el progreso de este nivel.')){AudioSys.sfx('click'); go(LV.quiz?'practice':'levels',LV.w);} };
+  $('#lv-back').onclick=()=>{
+    AudioSys.sfx('click');
+    modal(`<h2>¿Salir del nivel?</h2><div class="tut-text">Perderás el progreso de este nivel.</div>
+      <button class="btn" id="q-yes">Sí, salir</button>
+      <button class="btn ghost" id="q-no">Seguir jugando</button>`);
+    $('#q-yes').onclick=()=>{ AudioSys.sfx('click'); go(LV.quiz?'practice':'levels', LV.w); };
+    $('#q-no').onclick=()=>{ AudioSys.sfx('click'); closeModal(); };
+  };
   runRound();
 };
 
