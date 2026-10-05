@@ -335,7 +335,7 @@ function starters(){ return VERBS.filter(v=>v.starter); }
 function uverbs(){ return VERBS.slice(0,S.verbsN); }
 
 function buildRounds(w,l){
-  const R=[]; const st=starters();
+  let R=[]; const st=starters();
   const q=(g,c,key)=>R.push({g,c,key:key||('w'+w+Math.random().toString(36).slice(2,7))});
   const pro4=()=>shuffle(['I','YOU','WE','THEY'])[0];
 
@@ -566,6 +566,16 @@ function buildRounds(w,l){
     const pool=shuffle(all);
     for(let i=0;i<7;i++) R.push(pool[i%pool.length]);
     R.push({g:'speak',c:{phrase:'I will have been happy',hint:''},key:'w8:speak'});
+  }
+  // Sin minijuego de voz: se filtran las rondas speak y se rellena hasta 8
+  // clonando rondas existentes (más práctica, sin romper el balance).
+  R=R.filter(r=>r.g!=='speak');
+  let _n=0;
+  while(R.length<ROUNDS_PER_LEVEL&&R.length>0){
+    const src=R[Math.floor(Math.random()*R.length)];
+    const clone=JSON.parse(JSON.stringify(src));
+    clone.key=src.key+'#r'+(_n++);
+    R.push(clone);
   }
   return R.slice(0,ROUNDS_PER_LEVEL+2);
 }
